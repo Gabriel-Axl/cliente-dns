@@ -52,7 +52,7 @@ void enviarPacoteDNS(char * hostname, char * client){
 
 
     unsigned short *infoPergunta = (unsigned short *)&consultaDNS[sizeof(struct cabecalhoDNS) + (strlen((char *)nomeDominio) + 1)];
-    *infoPergunta++ = htons(1); // qtype
+    *infoPergunta++ = htons(2); // qtype
     *infoPergunta = htons(1);   // qclass
 
     struct cabecalhoDNS *dns = (struct cabecalhoDNS *)&consultaDNS;
