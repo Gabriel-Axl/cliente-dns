@@ -88,9 +88,32 @@ void enviarPacoteDNS(char * hostname, char * client){
         exit(EXIT_FAILURE);
     }
 
-    printf("\nResposta recebida do servidor DNS:\n");
+    printf("\nResolução bem sucedida:\n");
+    int control = 0;
+    char *temp = "";
     for (int i = 0; i < tamanhoResposta; i++) {
-        printf("%02X ", respostaDNS[i]);
+        if(control >= 3) {
+            control++;
+            printf("%c", respostaDNS[i]);  
+        } else {
+            if(respostaDNS[i] == 0x00 && control != 1) {
+                control++;
+            }else if(respostaDNS[i] == 0x07 && control != 2) {
+                control++;
+            }else if(respostaDNS[i] == 0x04 && control != 3) {
+                control++;
+            }else if (control < 3){
+                control = 0;
+            };
+        };
+        if(control >= 7 ) {
+            printf(".%s <> %s\n", hostname, hostname);
+            control = 0;
+        };
+        // if(respostaDNS[i] == 0xc0 && respostaDNS[i+1] == 0x0c) {
+        //     printf("Domain Name: %s <> nome_servidor_email: %s\n", nomeDominio, nomeDominio);
+        //     control = 0;
+        // };
     }
     printf("\n");
 
