@@ -90,11 +90,14 @@ void enviarPacoteDNS(char * hostname, char * client){
 
     printf("\nResolução bem sucedida:\n");
     int control = 0;
-    char *temp = "";
+    char temp[20] = "";
+    int len = strlen(temp); 
     for (int i = 0; i < tamanhoResposta; i++) {
         if(control >= 3) {
             control++;
-            printf("%c", respostaDNS[i]);  
+            len = strlen(temp); 
+            temp[len] = respostaDNS[i];
+            temp[++len] = '\0';
         } else {
             if(respostaDNS[i] == 0x00 && control != 1) {
                 control++;
@@ -107,7 +110,8 @@ void enviarPacoteDNS(char * hostname, char * client){
             };
         };
         if(control >= 7 ) {
-            printf(".%s <> %s\n", hostname, hostname);
+            printf("%s <> %s.%s\n", hostname, temp, hostname);
+            temp[0] = '\0';
             control = 0;
         };
         // if(respostaDNS[i] == 0xc0 && respostaDNS[i+1] == 0x0c) {
