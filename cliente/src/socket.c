@@ -87,12 +87,24 @@ void enviarPacoteDNS(char * hostname, char * client){
         close(sockfd);
         exit(EXIT_FAILURE);
     }
-
-    printf("\nResolução bem sucedida:\n");
+    
+    int isNS = 0;
+    int notNS = 0;
     int control = 0;
     char temp[20] = "";
     int len = strlen(temp); 
     for (int i = 0; i < tamanhoResposta; i++) {
+        // Checa se existe alguma consulta do tipo NS
+        if(respostaDNS[i] == 0x00 && isNS == 0) {
+            isNS++;
+        }else if(respostaDNS[i] == 0x02 && isNS == 1) {
+            isNS++;
+            notNS = 1;
+        } else {
+            isNS = 0;
+        }
+
+        // Pega o name server
         if(control >= 3) {
             control++;
             len = strlen(temp); 
@@ -118,6 +130,9 @@ void enviarPacoteDNS(char * hostname, char * client){
         //     printf("Domain Name: %s <> nome_servidor_email: %s\n", nomeDominio, nomeDominio);
         //     control = 0;
         // };
+    }
+    if (notNS == 0) {
+        printf("Dominio %s nao possui entrada NS", hostname);
     }
     printf("\n");
 
