@@ -88,10 +88,11 @@ void enviarPacoteDNS(char * hostname, char * client){
         exit(EXIT_FAILURE);
     }
     
+    int sentinela = 0;
     int isNS = 0;
     int notNS = 0;
     int control = 0;
-    char temp[20] = "";
+    char temp[50] = "";
     int len = strlen(temp); 
     for (int i = 0; i < tamanhoResposta; i++) {
         // Checa se existe alguma consulta do tipo NS
@@ -105,26 +106,49 @@ void enviarPacoteDNS(char * hostname, char * client){
         }
 
         // Pega o name server
-        if(control >= 3) {
-            control++;
-            len = strlen(temp); 
-            temp[len] = respostaDNS[i];
-            temp[++len] = '\0';
-        } else {
+        if(control >= 4) {
+            if(respostaDNS[i+1] ==  0x6e && respostaDNS[i+2] == 0x73){
+                sentinela = 1;
+            }
+            if(sentinela){
+                if(isalnum(respostaDNS[i]) || respostaDNS[i] == '.'){
+                    len = strlen(temp); 
+                    temp[len] = respostaDNS[i];
+                    temp[++len] = '\0';
+                }
+                else{
+                    len = strlen(temp); 
+                    temp[len] = '.';
+                    temp[++len] = '\0';
+                }
+
+                if(respostaDNS[i+1] ==  0xc0){
+                    printf("%s <> %s\n", hostname, temp);
+                    temp[0] = '\0';
+                    control = 0;
+                    sentinela = 0;
+                }
+            }
+            else{
+                control++;
+            }
+        } 
+        else {
             if(respostaDNS[i] == 0x00 && control != 1) {
                 control++;
-            }else if(respostaDNS[i] == 0x07 && control != 2) {
+            }
+            else if(respostaDNS[i] == 0x02 && control != 2) {
                 control++;
-            }else if(respostaDNS[i] == 0x04 && control != 3) {
+            }
+            else if(respostaDNS[i] == 0x01 && control != 3) {
                 control++;
-            }else if (control < 3){
+            }
+            else if(respostaDNS[i] == 0x00 && control != 4){
+                control++;
+            }
+            else if (control < 3){
                 control = 0;
             };
-        };
-        if(control >= 7 ) {
-            printf("%s <> %s.%s\n", hostname, temp, hostname);
-            temp[0] = '\0';
-            control = 0;
         };
         // if(respostaDNS[i] == 0xc0 && respostaDNS[i+1] == 0x0c) {
         //     printf("Domain Name: %s <> nome_servidor_email: %s\n", nomeDominio, nomeDominio);
