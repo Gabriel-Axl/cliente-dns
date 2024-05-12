@@ -5,6 +5,12 @@ struct sockaddr_in server_addr;
 unsigned char consultaDNS[65536];
 unsigned char respostaDNS[65536];
 
+void removePontoFinal(char *string){
+    int tamanhoString = strlen(string);
+
+    string[tamanhoString-1] = '\0';
+}
+
 void inicializaSocket(char * client){
     // Criação do socket UDP
     if ((sockfd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) < 0) {
@@ -106,6 +112,7 @@ void enviarPacoteDNS(char * hostname, char * client){
     unsigned char *nomeDominio = &consultaDNS[sizeof(struct cabecalhoDNS)];
     formatarDominio(nomeDominio, hostname);//formata o dominio e insere ao final da dns query
 
+    removePontoFinal(hostname);
 
     unsigned short *infoPergunta = (unsigned short *)&consultaDNS[sizeof(struct cabecalhoDNS) + (strlen((char *)nomeDominio) + 1)];
     *infoPergunta++ = htons(2); // qtype
@@ -150,7 +157,7 @@ void enviarPacoteDNS(char * hostname, char * client){
             {
                 printf("Nao foi possivel coletar entrada NS para %s\n", hostname);
                 close(sockfd);
-                exit(EXIT_FAILURE);
+                exit(0);
             }
         }
         else break;
