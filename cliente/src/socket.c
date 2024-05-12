@@ -3,7 +3,7 @@
 int sockfd;
 struct sockaddr_in server_addr;
 unsigned char consultaDNS[65536];
- unsigned char respostaDNS[65536];
+unsigned char respostaDNS[65536];
 
 void inicializaSocket(char * client){
     // Criação do socket UDP
@@ -41,6 +41,52 @@ void formatarDominio(unsigned char* dns,unsigned char* hostname) {
         }
     }
     *dns++ = 0; // Insere o byte de terminação
+}
+
+int hexToInt(unsigned char hex) {
+    int inteiro;
+    char temp[3]; // Array temporário para armazenar o caractere hexadecimal e o terminador de string
+    
+    // Converte o valor hexadecimal para sua representação como caractere
+    sprintf(temp, "%02X", hex);
+    temp[2] = '\0'; // Adiciona um terminador de string
+
+    sscanf(temp, "%X", &inteiro); // Use %02X para converter o valor hexadecimal para inteiro
+    
+    return inteiro;
+}
+char *ponteiroParaServerName(unsigned char *respostaDNS, int index, int limite) {
+    char *host = malloc(256);
+    if (host == NULL) {
+        exit(1);
+    }
+
+    int hostLen = 0; 
+
+    for(int x=index; x < limite; x++) {
+        if(respostaDNS[x] == 0xc0) {
+            int newIndex = hexToInt(respostaDNS[x+1]);
+            char *temp = ponteiroParaServerName(respostaDNS, newIndex, limite);
+            strcat(host, temp);
+            break;
+        }
+        if(respostaDNS[x] == 0x00) {        
+            break;
+        }
+
+        if(isalnum(respostaDNS[x]) || respostaDNS[x] == '.'){
+            hostLen = strlen(host); 
+            host[hostLen] = respostaDNS[x];
+            host[++hostLen] = '\0';                
+        } else {
+            if(host){
+                hostLen = strlen(host); 
+            }
+            host[hostLen] = '.';
+            host[++hostLen] = '\0';
+        }        
+    }
+    return host;   
 }
 
 void enviarPacoteDNS(char * hostname, char * client){
@@ -88,53 +134,47 @@ void enviarPacoteDNS(char * hostname, char * client){
         exit(EXIT_FAILURE);
     }
     
-    int isNS = 0;
-    int notNS = 0;
-    int control = 0;
-    char temp[20] = "";
+    int jump = 0;
+    char temp[99] = "";
     int len = strlen(temp); 
+    int control = 0;
     for (int i = 0; i < tamanhoResposta; i++) {
-        // Checa se existe alguma consulta do tipo NS
-        if(respostaDNS[i] == 0x00 && isNS == 0) {
-            isNS++;
-        }else if(respostaDNS[i] == 0x02 && isNS == 1) {
-            isNS++;
-            notNS = 1;
-        } else {
-            isNS = 0;
-        }
+        if(respostaDNS[i] == 0x02 && respostaDNS[i + 2] == 0x01){              
+            if ( jump == 0){
+                jump = 1;
+                continue;
+            }
+            int j = i + 8;
+            int tamanho = hexToInt(respostaDNS[j]);
+            for(int k = 0; k < tamanho; k++){
+                if(respostaDNS[k+ (j+1)] == 0xc0 ) {
+                    int index = hexToInt(respostaDNS[k+ (j+2)]);
 
-        // Pega o name server
-        if(control >= 3) {
-            control++;
-            len = strlen(temp); 
-            temp[len] = respostaDNS[i];
-            temp[++len] = '\0';
-        } else {
-            if(respostaDNS[i] == 0x00 && control != 1) {
-                control++;
-            }else if(respostaDNS[i] == 0x07 && control != 2) {
-                control++;
-            }else if(respostaDNS[i] == 0x04 && control != 3) {
-                control++;
-            }else if (control < 3){
-                control = 0;
-            };
-        };
-        if(control >= 7 ) {
-            printf("%s <> %s.%s\n", hostname, temp, hostname);
+                    char *temp2;
+                    temp2 = ponteiroParaServerName(respostaDNS, index, tamanhoResposta);
+
+                    strcat(temp, temp2);              
+                    break;
+                };
+                // colocar ponto
+                if(isalnum(respostaDNS[k+ (j+1)])){                    
+                    len = strlen(temp); 
+                    temp[len] = respostaDNS[k+ (j+1)];
+                    temp[++len] = '\0';                
+                } else {
+                    len = strlen(temp); 
+                    temp[len] = '.';
+                    temp[++len] = '\0';
+                }
+            }
+            printf("%s <> %s\n", hostname, temp);
             temp[0] = '\0';
-            control = 0;
-        };
-        // if(respostaDNS[i] == 0xc0 && respostaDNS[i+1] == 0x0c) {
-        //     printf("Domain Name: %s <> nome_servidor_email: %s\n", nomeDominio, nomeDominio);
-        //     control = 0;
-        // };
+            control=1;
+        }
     }
-    if (notNS == 0) {
-        printf("Dominio %s nao possui entrada NS", hostname);
+    if(control==0){
+        printf("Dominio %s nao possui entrada NS\n", hostname);
     }
-    printf("\n");
 
     close(sockfd);
 }
