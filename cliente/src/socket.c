@@ -12,6 +12,16 @@ void inicializaSocket(char * client){
         exit(EXIT_FAILURE);
     }
 
+    struct timeval timeout;
+    timeout.tv_sec = 2; // Tempo limite de 2 segundos
+    timeout.tv_usec = 0;
+    if (setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, (const char *)&timeout, sizeof(timeout)) < 0)
+    {
+        perror("Erro ao configurar timeout");
+        close(sockfd);
+        exit(EXIT_FAILURE);
+    }
+
     memset(&server_addr, 0, sizeof(server_addr));
 
     // Configuração do endereço do servidor
@@ -119,7 +129,8 @@ void enviarPacoteDNS(char * hostname, char * client){
     dns->add_count = 0;
 
     // Envio da consulta DNS
-    if (sendto(sockfd, (char *)consultaDNS, sizeof(struct cabecalhoDNS) + (strlen((const char *)nomeDominio) + 1) + sizeof(infoPergunta), 0, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0) {
+    if (sendto(sockfd, (char *)consultaDNS, sizeof(struct cabecalhoDNS) + (strlen((const char *)nomeDominio) + 1) + sizeof(infoPergunta), 0, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0)
+    {
         perror("Erro ao enviar a consulta");
         close(sockfd);
         exit(EXIT_FAILURE);
@@ -127,11 +138,22 @@ void enviarPacoteDNS(char * hostname, char * client){
 
     // Recebimento da resposta DNS
     int server_addr_len = sizeof(server_addr);
-    int tamanhoResposta = recvfrom(sockfd, (char *)respostaDNS, sizeof(respostaDNS), 0, (struct sockaddr *)&server_addr, &server_addr_len);
-    if (tamanhoResposta < 0) {
-        perror("Erro ao receber a resposta");
-        close(sockfd);
-        exit(EXIT_FAILURE);
+    int tamanhoResposta;
+    int counter = 0;
+    while (counter < 3)
+    {
+        tamanhoResposta = recvfrom(sockfd, (char *)respostaDNS, sizeof(respostaDNS), 0, (struct sockaddr *)&server_addr, &server_addr_len);
+        if (tamanhoResposta < 0)
+        {
+            counter++;
+            if (counter == 3)
+            {
+                printf("Nao foi possivel coletar entrada NS para %s\n", hostname);
+                close(sockfd);
+                exit(EXIT_FAILURE);
+            }
+        }
+        else break;
     }
     
     int jump = 0;
