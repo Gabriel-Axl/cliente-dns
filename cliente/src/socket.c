@@ -135,20 +135,20 @@ void enviarPacoteDNS(char * hostname, char * client){
     dns->auth_count = 0;
     dns->add_count = 0;
 
-    // Envio da consulta DNS
-    if (sendto(sockfd, (char *)consultaDNS, sizeof(struct cabecalhoDNS) + (strlen((const char *)nomeDominio) + 1) + sizeof(infoPergunta), 0, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0)
-    {
-        perror("Erro ao enviar a consulta");
-        close(sockfd);
-        exit(EXIT_FAILURE);
-    }
-
-    // Recebimento da resposta DNS
     int server_addr_len = sizeof(server_addr);
     int tamanhoResposta;
     int counter = 0;
     while (counter < 3)
     {
+        // Envio da consulta DNS
+        if (sendto(sockfd, (char *)consultaDNS, sizeof(struct cabecalhoDNS) + (strlen((const char *)nomeDominio) + 1) + sizeof(infoPergunta), 0, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0)
+        {
+            perror("Erro ao enviar a consulta");
+            close(sockfd);
+            exit(EXIT_FAILURE);
+        }
+
+        // Recebimento da resposta DNS
         tamanhoResposta = recvfrom(sockfd, (char *)respostaDNS, sizeof(respostaDNS), 0, (struct sockaddr *)&server_addr, &server_addr_len);
         if (tamanhoResposta < 0)
         {
