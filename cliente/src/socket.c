@@ -161,6 +161,11 @@ void enviarPacoteDNS(char * hostname, char * client){
     int len = strlen(temp); 
     int control = 0;
     for (int i = 0; i < tamanhoResposta; i++) {
+        if(respostaDNS[i] == 0x81 && respostaDNS[i + 1] == 0x83){
+            printf("Dominio %s nao encontrado\n", hostname);
+            control = 1;
+            break;
+        }
         if(respostaDNS[i] == 0x02 && respostaDNS[i + 2] == 0x01){              
             if ( jump == 0){
                 jump = 1;
