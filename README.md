@@ -38,10 +38,24 @@ make all
 ```
 # Como executar
 
-após compilar execute  
+após compilar execute 
 
-```
+Para rodar o projeto com as variaveis padrão execute apenas  
+
+```console
 make run 
+```
+Dominio padrão: unb.br  
+Servidor DNS padrão: 8.8.8.8  
+
+Para consulta personalizada execute o seguinte comando
+```console
+make run dominio=<nome_do_dominio> servidorDns=<ip_servidor_dns>
+```
+
+lembre-se de substituir <nome_do_dominio> e <ip_servidor_dns> pelos valores que deseja consultar, por exemplo: 
+```console
+make run dominio=amazon.com servidorDns=1.1.1.1
 ```
 
 ## quais são as telas 
