@@ -194,7 +194,7 @@ void enviarPacoteDNS(char * hostname, char * client){
                     temp[++len] = '\0';
                 }
             }
-            printf("%s <> %s\n", hostname, temp);
+            printf("%s <> %s\n", hostname, temp+1);
             temp[0] = '\0';
             control=1;
         }
